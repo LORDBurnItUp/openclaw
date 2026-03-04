@@ -1,0 +1,53 @@
+{
+  "name": "VoxCode — Voice Coding SaaS",
+  "short_name": "VoxCode",
+  "description": "Voice-to-code that ships. Sub-200ms latency, Claude AI, $1/month.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#22d3ee",
+  "orientation": "portrait-primary",
+  "lang": "en",
+  "categories": ["developer-tools", "productivity", "utilities"],
+  "icons": [
+    { "src": "/icons/icon-72.png",  "sizes": "72x72",   "type": "image/png" },
+    { "src": "/icons/icon-96.png",  "sizes": "96x96",   "type": "image/png" },
+    { "src": "/icons/icon-128.png", "sizes": "128x128", "type": "image/png" },
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "screenshots": [
+    { "src": "/screenshots/desktop.png", "sizes": "1280x720", "type": "image/png", "form_factor": "wide",   "label": "VoxCode Desktop" },
+    { "src": "/screenshots/mobile.png",  "sizes": "390x844",  "type": "image/png", "form_factor": "narrow", "label": "VoxCode Mobile" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Start Voice Session",
+      "short_name": "Voice On",
+      "description": "Activate voice-to-code mode",
+      "url": "/?voice=on",
+      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Pricing",
+      "short_name": "Pricing",
+      "url": "/#pricing",
+      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "My Account",
+      "short_name": "Account",
+      "url": "/login",
+      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=com.kingsfromearthdevelopment.voxcode",
+      "id": "com.kingsfromearthdevelopment.voxcode"
+    }
+  ],
+  "prefer_related_applications": false
+}

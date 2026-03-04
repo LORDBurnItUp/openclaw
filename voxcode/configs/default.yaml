@@ -1,0 +1,70 @@
+# VoxCode Default Configuration
+# Copy this to ~/.voxcode/config.yaml and customize
+
+voice:
+  # Whisper model: tiny, base, small, medium, large (+ .en variants)
+  model: "base.en"
+  language: "en"
+
+  # Device: cuda, cpu, mps, auto
+  device: "auto"
+  compute_type: "float16"  # float16, float32, int8
+
+  # Audio settings
+  sample_rate: 16000
+  channels: 1
+  chunk_duration: 0.5
+
+  # Voice activity detection
+  vad_threshold: 0.5
+  silence_duration: 1.0
+  min_speech_duration: 0.3
+
+ai:
+  # Provider: ollama, openai, anthropic
+  provider: "ollama"
+  model: "codellama"
+
+  # For OpenAI/Anthropic (set via env vars or here)
+  # api_key: "sk-..."
+  # api_base: null
+
+  # Ollama settings
+  ollama_host: "http://localhost:11434"
+
+  # Generation settings
+  temperature: 0.3
+  max_tokens: 2048
+
+hotkeys:
+  # Key combinations for actions
+  push_to_talk: "ctrl+shift+v"
+  toggle_listening: "ctrl+shift+space"
+  command_mode: "ctrl+shift+c"
+  cancel: "escape"
+
+ide:
+  # Default IDE: vscode, jetbrains, neovim, system
+  default: "vscode"
+  auto_detect: true
+  vscode_cli: "code"
+
+dictation:
+  auto_punctuate: true
+  auto_capitalize: true
+  code_mode_patterns:
+    - "\\.py$"
+    - "\\.js$"
+    - "\\.ts$"
+    - "\\.go$"
+    - "\\.rs$"
+    - "\\.java$"
+    - "\\.cpp$"
+    - "\\.c$"
+
+# Wake word activation
+wake_word: "hey vox"
+wake_word_enabled: true
+
+# Logging
+log_level: "INFO"

@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip:*)",
+      "Bash(voxcode version:*)",
+      "Bash(voxcode test-mic:*)",
+      "Bash(python:*)",
+      "Bash(where:*)",
+      "Bash(\"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\python.exe\" -c \"import whisper; print\\(''Downloading base.en model...''\\); model = whisper.load_model\\(''base.en''\\); print\\(''Model ready!''\\)\")",
+      "Bash(python3:*)",
+      "Bash(set PYTHONIOENCODING=utf-8)",
+      "Bash(voxcode run)",
+      "Bash(voxcode setup:*)",
+      "Bash(dir:*)",
+      "Bash(wsl --list --verbose)",
+      "Bash(wsl -l -v)",
+      "Bash(wsl -d Debian -- bash -c \"node --version && npm --version\")",
+      "Bash(wsl -d Debian -- bash -c \"which node && which npm\")",
+      "Bash(wsl -d Debian -- bash -c \"pkill -f ''next dev'' 2>/dev/null; pkill -f ''next-server'' 2>/dev/null; rm -f ''/mnt/c/Users/user/.antigravity/openclaw vip secured version/next-infastructure-scrapers/.next/dev/lock''; echo ''cleared''\")"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\user\\.antigravity\\openclaw vip secured version\\.shared\\ui-ux-pro-max\\data"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "write|edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "• jq -r '.tool_input.file_path | select(endswith(\".go\"))' | xargs -r gofmt -w• jq -r '.tool_input.file_path | select(endswith(\".go\"))' | xargs -r gofmt -w• jq -r '.tool_input.file_path | select(endswith(\".go\"))' | xargs -r gofmt -w"
+          },
+          {
+            "type": "command",
+            "command": "• python3 ~/hooks/validate_changes.py"
+          }
+        ]
+      }
+    ]
+  }
+}

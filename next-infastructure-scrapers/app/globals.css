@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+:root {
+  --background: #020617; /* slate-950 */
+  --foreground: #e5e7eb; /* gray-200 */
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --background: #f9fafb; /* gray-50 */
+    --foreground: #020617; /* slate-950 */
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+@keyframes clawWave {
+  from { transform: scaleY(0.25); opacity: 0.5; }
+  to   { transform: scaleY(1);    opacity: 1;   }
+}
+
+@keyframes clawFadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+.claw-fade-up {
+  animation: clawFadeUp 0.3s ease both;
+}
+
+/* ── FeatureTabsUniverse ───────────────────────────────── */
+@keyframes tabEnterR {
+  from {
+    opacity: 0;
+    transform: perspective(900px) rotateY(-28deg) translateX(60px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(900px) rotateY(0deg) translateX(0) scale(1);
+  }
+}
+
+@keyframes tabEnterL {
+  from {
+    opacity: 0;
+    transform: perspective(900px) rotateY(28deg) translateX(-60px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(900px) rotateY(0deg) translateX(0) scale(1);
+  }
+}
+
+@keyframes floatDot {
+  from { transform: translateY(0px) translateX(0px); }
+  to   { transform: translateY(-14px) translateX(8px); }
+}
+
+@keyframes featureItemIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── EarthDashboard ────────────────────────────────────── */
+@keyframes earthPulse {
+  0%, 100% { opacity: 0.18; transform: scale(1); }
+  50%       { opacity: 0.28; transform: scale(1.06); }
+}

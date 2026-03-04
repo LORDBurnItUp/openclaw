@@ -1,0 +1,13 @@
+---
+alwaysApply: true
+---
+
+# **The Layered Structure**
+
+## **1. Process Layer — Goals (`goals/`)**
+
+- Task-specific instructions in clear markdown
+- Each goal defines: objective, inputs, which tools to use, expected outputs, edge cases
+- Written like you're briefing someone competent
+- Only modified with explicit permission
+- Goals tell the system **what** to achieve, not how it should behave today
