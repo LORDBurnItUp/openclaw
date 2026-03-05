@@ -1,18 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import dynamic from "next/dynamic";
 import { Navbar } from "./components/Navbar";
 import { HeroSection } from "./components/HeroSection";
 import { FeatureTabsUniverse } from "./components/FeatureTabsUniverse";
-import { QuantumCore } from "./components/QuantumCore";
 import { HowItWorks } from "./components/HowItWorks";
 import { Pricing } from "./components/Pricing";
 import { Faq } from "./components/Faq";
 import { Footer } from "./components/Footer";
 import { VoxcodeConsole } from "./components/VoxcodeConsole";
 import { IntegrationsPanel } from "./components/IntegrationsPanel";
-import { FuturisticScene } from "./components/FuturisticScene";
 import { Download } from "./components/Download";
+
+// Heavy WebGL/Canvas components — dynamically loaded, no SSR (SolidJS-inspired lazy evaluation)
+const QuantumCore     = dynamic(() => import("./components/QuantumCore").then(m => ({ default: m.QuantumCore })), { ssr: false, loading: () => <div style={{ height: 600 }} /> });
+const FuturisticScene = dynamic(() => import("./components/FuturisticScene").then(m => ({ default: m.FuturisticScene })), { ssr: false });
 import { ClawBar } from "./components/ClawBar";
 import { ClawAssistant } from "./components/ClawAssistant";
 import { GhostHint } from "./components/GhostHint";
@@ -20,6 +23,7 @@ import { ClawTerminal } from "./components/ClawTerminal";
 import { AmbientPlayer } from "./components/AmbientPlayer";
 import { FGWallet } from "./components/FGWallet";
 import { DouglasCam } from "./components/DouglasCam";
+import { OllamaAgent } from "./components/OllamaAgent";
 import { CinematicIntro } from "./components/CinematicIntro";
 import { GemParticles } from "./components/GemParticles";
 
@@ -93,7 +97,9 @@ export default function Home() {
             <IntegrationsPanel />
             <VoxcodeConsole autoStart={introDone} />
             <FeatureTabsUniverse />
-            <QuantumCore />
+            <Suspense fallback={<div style={{ height: 600 }} />}>
+              <QuantumCore />
+            </Suspense>
             <HowItWorks />
             <Download />
             <Pricing />
@@ -110,6 +116,7 @@ export default function Home() {
           <AmbientPlayer />
           <FGWallet />
           <DouglasCam />
+          <OllamaAgent />
         </div>
       </div>
 

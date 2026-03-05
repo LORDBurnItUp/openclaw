@@ -1,8 +1,64 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Suspense, useMemo, useRef } from "react";
+import { Suspense, useMemo, useRef, memo, useCallback } from "react";
 import * as THREE from "three";
+
+// ─── Shared geometries (memoized for performance) ───────────────────────────────
+const ICOSAHEDRON_OUTER_GEOMETRY = new THREE.IcosahedronGeometry(1.35, 1);
+const ICOSAHEDRON_INNER_GEOMETRY = new THREE.IcosahedronGeometry(0.82, 1);
+const SPHERE_GLOW_GEOMETRY = new THREE.SphereGeometry(1.35, 20, 20);
+const OCTAHEDRON_GEOMETRY = new THREE.OctahedronGeometry(1, 0);
+const SPHERE_SMALL_GEOMETRY = new THREE.SphereGeometry(1, 6, 6);
+
+// Pre-create reusable materials
+const createOuterMaterial = () => new THREE.MeshStandardMaterial({
+  color: "#22d3ee",
+  emissive: "#0ea5e9",
+  emissiveIntensity: 0.55,
+  wireframe: true,
+  transparent: true,
+  opacity: 0.45,
+});
+
+const createInnerCoreMaterial = () => new THREE.MeshStandardMaterial({
+  color: "#0c4a6e",
+  emissive: "#22d3ee",
+  emissiveIntensity: 0.9,
+  roughness: 0.1,
+  metalness: 0.85,
+});
+
+const createGlowMaterial = () => new THREE.MeshBasicMaterial({
+  color: "#22d3ee",
+  transparent: true,
+  opacity: 0.07,
+  side: THREE.BackSide,
+});
+
+const createQubitCoreMaterial = (color: string) => new THREE.MeshStandardMaterial({
+  color,
+  emissive: color,
+  emissiveIntensity: 4,
+});
+
+const createQubitHaloMaterial = (color: string) => new THREE.MeshBasicMaterial({
+  color,
+  transparent: true,
+  opacity: 0.15,
+});
+
+const createRingMaterial = (color: string, opacity: number) => new THREE.MeshBasicMaterial({
+  color,
+  transparent: true,
+  opacity,
+});
+
+const createBoltMaterial = () => new THREE.MeshBasicMaterial({
+  color: "#22d3ee",
+  transparent: true,
+  opacity: 0.8,
+});
 
 // ─── Quantum stats ────────────────────────────────────────────────────────────
 const QSTATS = [
@@ -12,11 +68,18 @@ const QSTATS = [
   { label: "Error rate",       value: "0.003%", color: "#f59e0b" },
 ];
 
-// ─── Central processor core ───────────────────────────────────────────────────
-function ProcessorCore() {
+// ─── Central processor core (optimized) ───────────────────────────────────────
+const ProcessorCore = memo(function ProcessorCore() {
   const outerRef  = useRef<THREE.Mesh>(null);
   const innerRef  = useRef<THREE.Mesh>(null);
   const glowRef   = useRef<THREE.Mesh>(null);
+
+  // Memoize materials
+  const materials = useMemo(() => ({
+    outer: createOuterMaterial(),
+    inner: createInnerCoreMaterial(),
+    glow: createGlowMaterial(),
+  }), []);
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
@@ -38,52 +101,30 @@ function ProcessorCore() {
   return (
     <group>
       {/* Outer wireframe shell */}
-      <mesh ref={outerRef}>
-        <icosahedronGeometry args={[1.35, 1]} />
-        <meshStandardMaterial
-          color="#22d3ee"
-          emissive="#0ea5e9"
-          emissiveIntensity={0.55}
-          wireframe
-          transparent
-          opacity={0.45}
-        />
-      </mesh>
+      <mesh ref={outerRef} geometry={ICOSAHEDRON_OUTER_GEOMETRY} material={materials.outer} />
 
       {/* Inner solid core */}
-      <mesh ref={innerRef}>
-        <icosahedronGeometry args={[0.82, 2]} />
-        <meshStandardMaterial
-          color="#0c4a6e"
-          emissive="#22d3ee"
-          emissiveIntensity={0.9}
-          roughness={0.1}
-          metalness={0.85}
-        />
-      </mesh>
+      <mesh ref={innerRef} geometry={ICOSAHEDRON_INNER_GEOMETRY} material={materials.inner} />
 
       {/* Atmosphere glow */}
-      <mesh ref={glowRef} scale={1.9}>
-        <sphereGeometry args={[1.35, 24, 24]} />
-        <meshBasicMaterial
-          color="#22d3ee"
-          transparent
-          opacity={0.07}
-          side={THREE.BackSide}
-        />
-      </mesh>
+      <mesh ref={glowRef} geometry={SPHERE_GLOW_GEOMETRY} material={materials.glow} scale={1.9} />
     </group>
   );
-}
+});
 
-// ─── Qubit node ───────────────────────────────────────────────────────────────
-function Qubit({
+// ─── Qubit node (optimized) ───────────────────────────────────────────────────
+const Qubit = memo(function Qubit({
   orbitR, speed, phase, tilt, color,
 }: {
   orbitR: number; speed: number; phase: number; tilt: number; color: string;
 }) {
   const ref  = useRef<THREE.Group>(null);
   const coreRef = useRef<THREE.Mesh>(null);
+
+  const materials = useMemo(() => ({
+    core: createQubitCoreMaterial(color),
+    halo: createQubitHaloMaterial(color),
+  }), [color]);
 
   useFrame((state) => {
     if (!ref.current) return;
@@ -102,39 +143,35 @@ function Qubit({
   return (
     <group ref={ref}>
       {/* Qubit core */}
-      <mesh ref={coreRef} scale={0.075}>
-        <octahedronGeometry args={[1, 0]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={4} />
-      </mesh>
+      <mesh ref={coreRef} geometry={OCTAHEDRON_GEOMETRY} scale={0.075} material={materials.core} />
       {/* Halo */}
-      <mesh scale={0.22}>
-        <sphereGeometry args={[1, 8, 8]} />
-        <meshBasicMaterial color={color} transparent opacity={0.15} />
-      </mesh>
+      <mesh geometry={SPHERE_SMALL_GEOMETRY} scale={0.22} material={materials.halo} />
     </group>
   );
-}
+});
 
-// ─── Orbit ring ───────────────────────────────────────────────────────────────
-function Ring({
+// ─── Orbit ring (optimized) ─────────────────────────────────────────────────
+const Ring = memo(function Ring({
   radius, tilt, color, speed, opacity,
 }: {
   radius: number; tilt: number; color: string; speed: number; opacity: number;
 }) {
   const ref = useRef<THREE.Mesh>(null);
+  
+  const geometry = useMemo(() => new THREE.TorusGeometry(radius, 0.006, 6, 128), [radius]);
+  const material = useMemo(() => createRingMaterial(color, opacity), [color, opacity]);
+  
   useFrame((_, dt) => {
     if (ref.current) ref.current.rotation.z += dt * speed;
   });
+  
   return (
-    <mesh ref={ref} rotation={[tilt, 0, 0]}>
-      <torusGeometry args={[radius, 0.006, 6, 256]} />
-      <meshBasicMaterial color={color} transparent opacity={opacity} />
-    </mesh>
+    <mesh ref={ref} geometry={geometry} material={material} rotation={[tilt, 0, 0]} />
   );
-}
+});
 
-// ─── Lightning bolt (jagged tube between two points) ─────────────────────────
-function LightningBolt({
+// ─── Lightning bolt (optimized) ────────────────────────────────────────────
+const LightningBolt = memo(function LightningBolt({
   from, to, color, seed,
 }: {
   from: THREE.Vector3; to: THREE.Vector3; color: string; seed: number;
@@ -144,7 +181,7 @@ function LightningBolt({
   const geometry = useMemo(() => {
     const buildBolt = (s: number) => {
       const pts: THREE.Vector3[] = [];
-      const segments = 10;
+      const segments = 8; // Reduced from 10
       for (let i = 0; i <= segments; i++) {
         const t2 = i / segments;
         const base = new THREE.Vector3().lerpVectors(from, to, t2);
@@ -159,8 +196,14 @@ function LightningBolt({
       return new THREE.CatmullRomCurve3(pts);
     };
     const curve = buildBolt(seed);
-    return new THREE.TubeGeometry(curve, 20, 0.008, 4, false);
+    return new THREE.TubeGeometry(curve, 16, 0.008, 4, false); // Reduced segments from 20
   }, [from, to, seed]);
+
+  const material = useMemo(() => {
+    const mat = createBoltMaterial();
+    mat.color = new THREE.Color(color);
+    return mat;
+  }, [color]);
 
   useFrame((state) => {
     if (meshRef.current) {
@@ -170,11 +213,9 @@ function LightningBolt({
   });
 
   return (
-    <mesh ref={meshRef} geometry={geometry}>
-      <meshBasicMaterial color={color} transparent opacity={0.8} />
-    </mesh>
+    <mesh ref={meshRef} geometry={geometry} material={material} />
   );
-}
+});
 
 // ─── Lightning system ─────────────────────────────────────────────────────────
 function LightningSystem() {
@@ -319,7 +360,13 @@ export function QuantumCore() {
 
           <Canvas
             camera={{ position: [0, 0, 5.8], fov: 44 }}
-            gl={{ alpha: true, antialias: true }}
+            gl={{
+              alpha: true,
+              // Disable antialias on mobile — halves GPU cost
+              antialias: typeof window !== "undefined" ? window.innerWidth >= 768 : true,
+              powerPreference: "high-performance",
+            }}
+            dpr={[1, 1.5]} // Cap at 1.5x — was 2x
             className="rounded-2xl"
           >
             <Suspense fallback={null}>

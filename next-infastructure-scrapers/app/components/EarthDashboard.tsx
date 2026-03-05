@@ -1,8 +1,57 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Suspense, useRef } from "react";
+import { Suspense, useRef, useMemo, memo } from "react";
 import * as THREE from "three";
+
+// ─── Shared geometries (memoized for performance) ───────────────────────────────
+const EARTH_GEOMETRY = new THREE.SphereGeometry(1.5, 48, 48);
+const WIRE_GEOMETRY = new THREE.SphereGeometry(1.5, 24, 24);
+const ATMOSPHERE_INNER_GEOMETRY = new THREE.SphereGeometry(1.5, 28, 28);
+const ATMOSPHERE_OUTER_GEOMETRY = new THREE.SphereGeometry(1.5, 24, 24);
+const SATELLITE_GEOMETRY = new THREE.SphereGeometry(1, 12, 12);
+const SATELLITE_HALO_GEOMETRY = new THREE.SphereGeometry(1, 8, 8);
+
+// Pre-create materials for reuse
+const createEarthMaterial = () => new THREE.MeshStandardMaterial({
+  color: "#0c4a6e",
+  emissive: "#0284c7",
+  emissiveIntensity: 0.3,
+  roughness: 0.65,
+  metalness: 0.15,
+});
+
+const createWireMaterial = () => new THREE.MeshBasicMaterial({
+  color: "#22d3ee",
+  wireframe: true,
+  transparent: true,
+  opacity: 0.07,
+});
+
+const createAtmosphereMaterial = (color: string, opacity: number) => new THREE.MeshBasicMaterial({
+  color,
+  transparent: true,
+  opacity,
+  side: THREE.BackSide,
+});
+
+const createSatelliteCoreMaterial = (color: string) => new THREE.MeshStandardMaterial({
+  emissive: color,
+  emissiveIntensity: 5,
+  color,
+});
+
+const createSatelliteHaloMaterial = (color: string) => new THREE.MeshBasicMaterial({
+  color,
+  transparent: true,
+  opacity: 0.12,
+});
+
+const createOrbitMaterial = (color: string, opacity: number) => new THREE.MeshBasicMaterial({
+  color,
+  transparent: true,
+  opacity,
+});
 
 // ─── Stats data ────────────────────────────────────────────────────────────────
 const STATS = [
@@ -12,10 +61,18 @@ const STATS = [
   { label: "Countries",        value: "64",    icon: "🌍",  color: "#f59e0b" },
 ];
 
-// ─── Spinning Earth ────────────────────────────────────────────────────────────
-function Earth() {
+// ─── Spinning Earth (optimized) ───────────────────────────────────────────────
+const Earth = memo(function Earth() {
   const coreRef  = useRef<THREE.Mesh>(null);
   const wireRef  = useRef<THREE.Mesh>(null);
+  
+  // Memoize materials to prevent recreation on every render
+  const materials = useMemo(() => ({
+    core: createEarthMaterial(),
+    wire: createWireMaterial(),
+    atmosphereInner: createAtmosphereMaterial("#0ea5e9", 0.04),
+    atmosphereOuter: createAtmosphereMaterial("#38bdf8", 0.015),
+  }), []);
 
   useFrame((state, delta) => {
     if (coreRef.current) coreRef.current.rotation.y += delta * 0.1;
@@ -28,55 +85,22 @@ function Earth() {
   return (
     <group>
       {/* Solid globe */}
-      <mesh ref={coreRef}>
-        <sphereGeometry args={[1.5, 64, 64]} />
-        <meshStandardMaterial
-          color="#0c4a6e"
-          emissive="#0284c7"
-          emissiveIntensity={0.3}
-          roughness={0.65}
-          metalness={0.15}
-        />
-      </mesh>
+      <mesh ref={coreRef} geometry={EARTH_GEOMETRY} material={materials.core} />
 
       {/* Wireframe shell */}
-      <mesh ref={wireRef} scale={1.003}>
-        <sphereGeometry args={[1.5, 28, 28]} />
-        <meshBasicMaterial
-          color="#22d3ee"
-          wireframe
-          transparent
-          opacity={0.07}
-        />
-      </mesh>
+      <mesh ref={wireRef} geometry={WIRE_GEOMETRY} material={materials.wire} scale={1.003} />
 
       {/* Atmosphere — inner */}
-      <mesh scale={1.1}>
-        <sphereGeometry args={[1.5, 32, 32]} />
-        <meshBasicMaterial
-          color="#0ea5e9"
-          transparent
-          opacity={0.04}
-          side={THREE.BackSide}
-        />
-      </mesh>
+      <mesh geometry={ATMOSPHERE_INNER_GEOMETRY} material={materials.atmosphereInner} scale={1.1} />
 
       {/* Atmosphere — outer halo */}
-      <mesh scale={1.22}>
-        <sphereGeometry args={[1.5, 32, 32]} />
-        <meshBasicMaterial
-          color="#38bdf8"
-          transparent
-          opacity={0.015}
-          side={THREE.BackSide}
-        />
-      </mesh>
+      <mesh geometry={ATMOSPHERE_OUTER_GEOMETRY} material={materials.atmosphereOuter} scale={1.22} />
     </group>
   );
-}
+});
 
-// ─── Orbit ring ────────────────────────────────────────────────────────────────
-function OrbitRing({
+// ─── Orbit ring (optimized) ───────────────────────────────────────────────────
+const OrbitRing = memo(function OrbitRing({
   radius,
   tilt,
   color,
@@ -90,19 +114,21 @@ function OrbitRing({
   opacity: number;
 }) {
   const ref = useRef<THREE.Mesh>(null);
+  
+  const geometry = useMemo(() => new THREE.TorusGeometry(radius, 0.005, 6, 128), [radius]);
+  const material = useMemo(() => createOrbitMaterial(color, opacity), [color, opacity]);
+  
   useFrame((_, delta) => {
     if (ref.current) ref.current.rotation.z += delta * speed;
   });
+  
   return (
-    <mesh ref={ref} rotation={[tilt, 0, 0]}>
-      <torusGeometry args={[radius, 0.005, 6, 256]} />
-      <meshBasicMaterial color={color} transparent opacity={opacity} />
-    </mesh>
+    <mesh ref={ref} geometry={geometry} material={material} rotation={[tilt, 0, 0]} />
   );
-}
+});
 
-// ─── Orbiting satellite dot ────────────────────────────────────────────────────
-function Satellite({
+// ─── Orbiting satellite dot (optimized) ────────────────────────────────────
+const Satellite = memo(function Satellite({
   orbitR,
   speed,
   phase,
@@ -118,12 +144,17 @@ function Satellite({
   size: number;
 }) {
   const ref = useRef<THREE.Group>(null);
+  
+  const materials = useMemo(() => ({
+    core: createSatelliteCoreMaterial(color),
+    halo: createSatelliteHaloMaterial(color),
+  }), [color]);
+  
   useFrame((state) => {
     if (!ref.current) return;
     const t = state.clock.elapsedTime * speed + phase;
     const cosT = Math.cos(t);
     const sinT = Math.sin(t);
-    // Tilt the orbit plane
     ref.current.position.set(
       cosT * orbitR,
       sinT * orbitR * Math.sin(tiltY),
@@ -134,22 +165,12 @@ function Satellite({
   return (
     <group ref={ref}>
       {/* Core dot */}
-      <mesh scale={size}>
-        <sphereGeometry args={[1, 16, 16]} />
-        <meshStandardMaterial
-          emissive={color}
-          emissiveIntensity={5}
-          color={color}
-        />
-      </mesh>
+      <mesh scale={size} geometry={SATELLITE_GEOMETRY} material={materials.core} />
       {/* Halo */}
-      <mesh scale={size * 3}>
-        <sphereGeometry args={[1, 8, 8]} />
-        <meshBasicMaterial color={color} transparent opacity={0.12} />
-      </mesh>
+      <mesh scale={size * 3} geometry={SATELLITE_HALO_GEOMETRY} material={materials.halo} />
     </group>
   );
-}
+});
 
 // ─── Scene wrapper ─────────────────────────────────────────────────────────────
 function Scene() {
@@ -231,7 +252,12 @@ export function EarthDashboard() {
 
           <Canvas
             camera={{ position: [0, 0, 5.2], fov: 42 }}
-            gl={{ alpha: true, antialias: true }}
+            gl={{ 
+              alpha: true, 
+              antialias: true,
+              powerPreference: "high-performance",
+            }}
+            dpr={[1, 2]} // Limit pixel ratio for performance
             style={{ background: "transparent" }}
           >
             <Suspense fallback={null}>

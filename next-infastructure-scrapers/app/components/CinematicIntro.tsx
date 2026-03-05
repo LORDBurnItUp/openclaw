@@ -22,7 +22,7 @@ function rr(a: number, b: number) { return a + r01() * (b - a); }
 function dDiamond(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, col: string, a: number, rot: number) {
   if (a <= 0.01) return;
   ctx.save(); ctx.globalAlpha = a; ctx.translate(x, y); ctx.rotate(rot);
-  ctx.shadowBlur = s * 5; ctx.shadowColor = col;
+  ctx.shadowBlur = s > 4 ? s * 5 : 0; ctx.shadowColor = col;
   ctx.fillStyle = col; ctx.beginPath();
   ctx.moveTo(0, -s * 1.5); ctx.lineTo(s * 0.75, 0); ctx.lineTo(0, s * 1.5); ctx.lineTo(-s * 0.75, 0);
   ctx.closePath(); ctx.fill();
@@ -36,7 +36,7 @@ function dDiamond(ctx: CanvasRenderingContext2D, x: number, y: number, s: number
 function dGem(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, col: string, a: number, rot: number) {
   if (a <= 0.01) return;
   ctx.save(); ctx.globalAlpha = a; ctx.translate(x, y); ctx.rotate(rot);
-  ctx.shadowBlur = s * 6; ctx.shadowColor = col;
+  ctx.shadowBlur = s > 4 ? s * 6 : 0; ctx.shadowColor = col;
   ctx.fillStyle = col; ctx.beginPath();
   for (let i = 0; i < 6; i++) {
     const ang = i * Math.PI / 3 - Math.PI / 6;
@@ -65,6 +65,121 @@ function dRgb(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, hu
   ctx.restore();
 }
 
+// ─── Drip particle (for Kings Dripping Swag sign) ────────────────────────────
+interface DripParticle {
+  x: number; y: number;
+  vy: number; vx: number;
+  width: number; height: number;
+  alpha: number; hue: number;
+  goldRatio: number; phase: number;
+}
+
+// Draw the melting "KINGS DRIPPING SWAG / AI DEVELOPMENT" sign on canvas
+function drawMeltingSign(
+  ctx: CanvasRenderingContext2D,
+  W: number, H: number, t: number,
+  drips: DripParticle[]
+): void {
+  if (t > 4.2) return;
+  const fadeIn    = Math.min(1, t / 0.6);
+  const fadeOut   = t > 3.2 ? Math.max(0, 1 - (t - 3.2) / 1.0) : 1;
+  const masterAlpha = fadeIn * fadeOut;
+  if (masterAlpha <= 0.005) return;
+
+  const cx    = W / 2;
+  const line1Y = H * 0.26;
+  const line2Y = H * 0.26 + Math.min(70, H * 0.09);
+  const fs1   = Math.min(68, Math.max(26, W * 0.053));
+  const fs2   = Math.min(50, Math.max(20, W * 0.040));
+  const hue   = (t * 80) % 360;
+  const col1  = `hsl(${hue},100%,62%)`;
+  const col2  = `hsl(${(hue + 120) % 360},100%,62%)`;
+  const warp  = Math.sin(t * 1.3) * 1.8;
+
+  ctx.save();
+  ctx.globalAlpha = masterAlpha;
+
+  // Line 1: KINGS DRIPPING SWAG — layered glow
+  ctx.font = `900 ${fs1}px "Arial Black", Arial, sans-serif`;
+  ctx.textAlign    = "center";
+  ctx.textBaseline = "alphabetic";
+  for (let g = 3; g >= 0; g--) {
+    ctx.shadowBlur  = 10 + g * 16;
+    ctx.shadowColor = g === 0 ? "#ffd700" : col1;
+    ctx.fillStyle   = g === 0 ? "#ffd700" : col1;
+    ctx.fillText("KINGS DRIPPING SWAG", cx, line1Y + warp);
+  }
+
+  // Line 2: AI DEVELOPMENT
+  ctx.font = `900 ${fs2}px "Arial Black", Arial, sans-serif`;
+  ctx.shadowBlur  = 20;
+  ctx.shadowColor = col2;
+  ctx.fillStyle   = col2;
+  ctx.fillText("AI DEVELOPMENT", cx, line2Y + warp * 0.7);
+
+  // Separator
+  const sepY = line1Y + (line2Y - line1Y) * 0.42;
+  const sepW = Math.min(W * 0.5, 480);
+  ctx.shadowBlur    = 6;
+  ctx.shadowColor   = "#ffd700";
+  ctx.strokeStyle   = "#ffd700";
+  ctx.lineWidth     = 1.4;
+  ctx.globalAlpha   = masterAlpha * 0.55;
+  ctx.beginPath();
+  ctx.moveTo(cx - sepW / 2, sepY);
+  ctx.lineTo(cx + sepW / 2, sepY);
+  ctx.stroke();
+  ctx.restore();
+
+  // Spawn drip particles from text baselines
+  if (masterAlpha > 0.1 && t < 3.8) {
+    const count = Math.random() < 0.6 ? 2 : 3;
+    for (let i = 0; i < count; i++) {
+      const onLine1 = Math.random() < 0.6;
+      const lineY   = onLine1 ? line1Y : line2Y;
+      const lineW   = onLine1 ? Math.min(W * 0.52, 500) : Math.min(W * 0.36, 340);
+      drips.push({
+        x:         cx + (Math.random() - 0.5) * lineW * 0.88,
+        y:         lineY + 3,
+        vy:        0.4 + Math.random() * 1.3,
+        vx:        (Math.random() - 0.5) * 0.3,
+        width:     1 + Math.random() * 2.5,
+        height:    4 + Math.random() * 9,
+        alpha:     masterAlpha * (0.65 + Math.random() * 0.35),
+        hue:       (hue + Math.random() * 60 - 30 + 360) % 360,
+        goldRatio: Math.random() < 0.55 ? 1 : 0,
+        phase:     Math.random() * Math.PI * 2,
+      });
+    }
+  }
+}
+
+function drawDrips(ctx: CanvasRenderingContext2D, t: number, drips: DripParticle[]): void {
+  for (let i = drips.length - 1; i >= 0; i--) {
+    const d = drips[i];
+    d.vy  += 0.055;
+    d.vx  += Math.sin(t * 3.2 + d.phase) * 0.02;
+    d.x   += d.vx;
+    d.y   += d.vy;
+    d.alpha -= 0.008 + d.vy * 0.003;
+    if (d.alpha <= 0.01) { drips.splice(i, 1); continue; }
+
+    const col = d.goldRatio > 0.5 ? "#ffd700" : `hsl(${d.hue},100%,62%)`;
+    ctx.save();
+    ctx.globalAlpha = d.alpha;
+    ctx.shadowBlur  = 6;
+    ctx.shadowColor = col;
+    ctx.fillStyle   = col;
+    ctx.beginPath();
+    ctx.ellipse(d.x, d.y - d.height * 0.3, d.width, d.height * 0.5, 0, Math.PI, Math.PI * 2);
+    ctx.lineTo(d.x + d.width * 0.8, d.y + d.height * 0.2);
+    ctx.quadraticCurveTo(d.x, d.y + d.height, d.x - d.width * 0.8, d.y + d.height * 0.2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
 // ─── Stars ────────────────────────────────────────────────────────────────────
 interface Star { x: number; y: number; z: number; pz: number; }
 
@@ -74,6 +189,7 @@ export function CinematicIntro({ onDone }: { onDone: () => void }) {
   const phaseRef    = useRef(0); // 0=warp 1=approach 2=impact 3=explode 4=settle 5=float 6=done
   const shakeRef    = useRef(0);
   const particleRef = useRef<Particle[]>([]);
+  const dripRef     = useRef<DripParticle[]>([]);
   const [cssPhase,  setCssPhase]  = useState(0);
   const [opacity,   setOpacity]   = useState(1);
   const doneFired   = useRef(false);
@@ -115,8 +231,8 @@ export function CinematicIntro({ onDone }: { onDone: () => void }) {
       });
     }
 
-    // Persistent RGB glows
-    for (let i = 0; i < 60; i++) {
+    // Persistent RGB glows — reduced from 60 to 40
+    for (let i = 0; i < 40; i++) {
       ps.push({
         x: rr(0, W), y: rr(0, H),
         vx: rr(-0.3, 0.3), vy: rr(-0.5, 0.2),
@@ -207,6 +323,10 @@ export function CinematicIntro({ onDone }: { onDone: () => void }) {
           ctx.moveTo(px, py); ctx.lineTo(nx, ny); ctx.stroke();
         });
       }
+
+      // ── Kings Dripping Swag sign (visible during star warp → Earth approach) ──
+      drawMeltingSign(ctx, W, H, t, dripRef.current);
+      drawDrips(ctx, t, dripRef.current);
 
       // ── Earth approach ────────────────────────────────────────────────────────
       if (ph === 1) {
@@ -345,7 +465,7 @@ export function CinematicIntro({ onDone }: { onDone: () => void }) {
     };
 
     raf = requestAnimationFrame(tick);
-    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); dripRef.current = []; };
   }, [onDone, spawnExplosion]);
 
   return (

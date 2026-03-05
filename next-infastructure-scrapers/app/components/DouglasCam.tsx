@@ -69,8 +69,10 @@ export function DouglasCam() {
   const [input,   setInput]   = useState("");
   const [typing,  setTyping]  = useState(false);
   const [pip,     setPip]     = useState(false);
-  const [voiceOn, setVoiceOn] = useState(false);
-  const [voiceLive, setVoiceLive] = useState("");
+  const [voiceOn,     setVoiceOn]     = useState(false);
+  const [voiceLive,   setVoiceLive]   = useState("");
+  const [localModel,  setLocalModel]  = useState("");
+  const [localModels, setLocalModels] = useState<string[]>([]);
 
   const videoRef      = useRef<HTMLVideoElement>(null);
   const streamRef     = useRef<MediaStream | null>(null);
@@ -93,6 +95,15 @@ export function DouglasCam() {
       persistChat([greeting]);
     }
   }, []);
+
+  // Fetch local Ollama models when panel opens
+  useEffect(() => {
+    if (!open) return;
+    fetch("/api/ollama")
+      .then(r => r.json())
+      .then(d => setLocalModels((d.models ?? []).map((m: { name: string }) => m.name)))
+      .catch(() => {});
+  }, [open]);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -228,15 +239,22 @@ export function DouglasCam() {
     }));
 
     try {
-      const res = await fetch("/api/douglas", {
+      const endpoint = localModel ? "/api/ollama" : "/api/douglas";
+      const payload  = localModel
+        ? { model: localModel, messages: history, stream: false }
+        : { messages: history };
+
+      const res = await fetch(endpoint, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ messages: history }),
+        body:    JSON.stringify(payload),
       });
 
       const data = await res.json();
-      // API returns { reply: string } — always use data.reply
-      const replyText = data?.reply ?? "Got it. Keep going — I'm watching.";
+      // Normalize: /api/ollama returns { content:[{text}] }, /api/douglas returns { reply }
+      const replyText = localModel
+        ? (data?.content?.[0]?.text ?? "No response from local model.")
+        : (data?.reply ?? "Got it. Keep going — I'm watching.");
 
       const replyMsg: Msg = { from: "douglas", text: replyText, ts: Date.now() };
       const final = [...updatedMsgs, replyMsg];
@@ -257,7 +275,7 @@ export function DouglasCam() {
       setTimeout(() => setMood("idle"), 2000);
     }
     setTyping(false);
-  }, [input, typing, msgs]);
+  }, [input, typing, msgs, localModel]);
 
   const clearChat = () => {
     const fresh: Msg[] = [{
@@ -324,6 +342,18 @@ export function DouglasCam() {
             </div>
           </div>
           <div className="flex items-center gap-1">
+            {/* Local model picker — switches Douglas from Claude to Ollama */}
+            {localModels.length > 0 && (
+              <select
+                value={localModel}
+                onChange={e => setLocalModel(e.target.value)}
+                title="Switch to local Ollama model"
+                className="max-w-[100px] truncate rounded-lg border border-slate-700 bg-slate-900 px-1.5 py-1 text-[9px] text-slate-300 outline-none focus:border-cyan-400"
+              >
+                <option value="">Claude API</option>
+                {localModels.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            )}
             <button
               type="button"
               onClick={clearChat}
