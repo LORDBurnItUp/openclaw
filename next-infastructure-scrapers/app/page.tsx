@@ -24,6 +24,7 @@ import { AmbientPlayer } from "./components/AmbientPlayer";
 import { FGWallet } from "./components/FGWallet";
 import { DouglasCam } from "./components/DouglasCam";
 import { OllamaAgent } from "./components/OllamaAgent";
+import { VoxShield } from "./components/VoxShield";
 import { CinematicIntro } from "./components/CinematicIntro";
 import { GemParticles } from "./components/GemParticles";
 
@@ -117,6 +118,7 @@ export default function Home() {
           <FGWallet />
           <DouglasCam />
           <OllamaAgent />
+          <VoxShield />
         </div>
       </div>
 
