@@ -70,7 +70,7 @@ const TABS: Tab[] = [
 
 // ─── Floating particle dots ─────────────────────────────────────────────────
 // Pre-generated particle configurations to avoid Math.random() in render
-const PARTICLE_CONFIGS = Array.from({ length: 18 }).map((_, i) => ({
+const PARTICLE_CONFIGS = Array.from({ length: 18 }).map(() => ({
   width: 2 + Math.random() * 4,
   height: 2 + Math.random() * 4,
   opacity: 0.15 + Math.random() * 0.25,
@@ -108,18 +108,17 @@ function PanelContent({ tab, mouse }: { tab: Tab; mouse: { x: number; y: number 
     <div className="relative flex h-full flex-col justify-between gap-6 md:flex-row md:items-center">
       {/* Left: headline + body */}
       <div
-        className="flex-1 space-y-4"
+        className="flex-1 space-y-4 transition-transform duration-150"
         style={{
           transform: `translate(${mouse.x * -8}px, ${mouse.y * -5}px)`,
-          transition: "transform 0.15s linear",
         }}
       >
         <div className="flex items-center gap-4">
           <div
             className="flex h-14 w-14 items-center justify-center rounded-2xl text-3xl"
             style={{
-              background: `${tab.accent}18`,
-              border: `1px solid ${tab.accent}40`,
+              backgroundColor: `${tab.accent}18`,
+              borderColor: `${tab.accent}40`,
               boxShadow: `0 0 30px ${tab.accent}30`,
             }}
           >
@@ -139,11 +138,9 @@ function PanelContent({ tab, mouse }: { tab: Tab; mouse: { x: number; y: number 
 
       {/* Right: feature pills */}
       <div
-        className="flex flex-col justify-center gap-2.5"
+        className="flex flex-col justify-center gap-2.5 min-w-[220px] transition-transform duration-100"
         style={{
           transform: `translate(${mouse.x * 10}px, ${mouse.y * 6}px)`,
-          transition: "transform 0.1s linear",
-          minWidth: "220px",
         }}
       >
         {tab.items.map((item, i) => (
@@ -151,16 +148,15 @@ function PanelContent({ tab, mouse }: { tab: Tab; mouse: { x: number; y: number 
             key={item}
             className="flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium"
             style={{
-              border: `1px solid ${tab.accent}30`,
-              background: `${tab.accent}0d`,
+              borderColor: `${tab.accent}30`,
+              backgroundColor: `${tab.accent}0d`,
               color: tab.accent,
               animationDelay: `${i * 70}ms`,
-              animation: "featureItemIn 0.45s cubic-bezier(0.22,1,0.36,1) both",
             }}
           >
             <span
               className="h-1.5 w-1.5 rounded-full flex-shrink-0"
-              style={{ background: tab.accent, boxShadow: `0 0 6px ${tab.accent}` }}
+              style={{ backgroundColor: tab.accent, boxShadow: `0 0 6px ${tab.accent}` }}
             />
             {item}
           </div>
@@ -188,17 +184,26 @@ export function FeatureTabsUniverse() {
     [active],
   );
 
-  // Mouse parallax
+  // Mouse parallax — RAF-throttled to cap at 60fps instead of 200+ setState/sec
   useEffect(() => {
+    let pending = false;
+    let latestE: MouseEvent | null = null;
     const onMove = (e: MouseEvent) => {
-      if (!sectionRef.current) return;
-      const rect = sectionRef.current.getBoundingClientRect();
-      setMouse({
-        x: ((e.clientX - rect.left) / rect.width - 0.5) * 2,
-        y: ((e.clientY - rect.top) / rect.height - 0.5) * 2,
+      latestE = e;
+      if (pending) return;
+      pending = true;
+      requestAnimationFrame(() => {
+        if (latestE && sectionRef.current) {
+          const rect = sectionRef.current.getBoundingClientRect();
+          setMouse({
+            x: ((latestE.clientX - rect.left) / rect.width  - 0.5) * 2,
+            y: ((latestE.clientY - rect.top)  / rect.height - 0.5) * 2,
+          });
+        }
+        pending = false;
       });
     };
-    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mousemove", onMove, { passive: true });
     return () => window.removeEventListener("mousemove", onMove);
   }, []);
 
@@ -282,11 +287,13 @@ export function FeatureTabsUniverse() {
             <button
               key={t.id}
               onClick={() => handleTabClick(i)}
+              aria-label={`Switch to ${t.label} tab`}
               className="relative rounded-full px-5 py-2 text-sm font-semibold transition-all duration-300"
               style={{
                 color: i === active ? "#020617" : t.accent,
-                background: i === active ? t.accent : `${t.accent}16`,
-                border: `1.5px solid ${t.accent}${i === active ? "ff" : "35"}`,
+                backgroundColor: i === active ? t.accent : "transparent",
+                borderColor: `${t.accent}${i === active ? "ff" : "35"}`,
+                borderWidth: "1.5px",
                 boxShadow: i === active ? `0 0 28px ${t.accent}55, 0 0 8px ${t.accent}30` : "none",
                 transform: i === active ? "scale(1.1) translateY(-2px)" : "scale(1)",
               }}
@@ -310,18 +317,17 @@ export function FeatureTabsUniverse() {
 
         {/* 3D panel */}
         <div
-          className="relative"
-          style={{ minHeight: "260px", transformStyle: "preserve-3d" }}
+          className="relative min-h-[260px]"
+          style={{ transformStyle: "preserve-3d" }}
         >
           <div
             key={animKey}
-            className="relative overflow-hidden rounded-3xl border p-8 backdrop-blur-xl"
+            className="relative overflow-hidden rounded-3xl border p-8 backdrop-blur-xl min-h-[240px]"
             style={{
               background: `linear-gradient(135deg, ${tab.accent}10 0%, ${tab.dim}1a 50%, transparent 100%)`,
               borderColor: `${tab.accent}35`,
               boxShadow: `0 0 100px ${tab.accent}20, 0 0 40px ${tab.accent}10, inset 0 0 60px ${tab.accent}06`,
               animation: `tabEnter${animDir === "right" ? "R" : "L"} 0.5s cubic-bezier(0.22,1,0.36,1) both`,
-              minHeight: "240px",
             }}
           >
             <ParticleDots accent={tab.accent} />
@@ -334,6 +340,8 @@ export function FeatureTabsUniverse() {
           {TABS.map((t, i) => (
             <button
               key={t.id}
+              type="button"
+              aria-label={`Go to ${t.label} tab`}
               onClick={() => handleTabClick(i)}
               className="rounded-full transition-all duration-300"
               style={{

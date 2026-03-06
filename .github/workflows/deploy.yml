@@ -3,16 +3,16 @@ name: Build & Deploy — VoxCode
 on:
   push:
     branches: [main]
-  workflow_dispatch:   # manual trigger from GitHub Actions tab
+  workflow_dispatch:
 
 concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # ── 1. Build & type-check ────────────────────────────────────────────────────
-  build:
-    name: Build
+  # ── Single job: build then deploy (avoids artifact upload overhead) ──────────
+  deploy:
+    name: Build & Deploy to Hostinger
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -32,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Build
+      - name: Type-check & Build
         env:
           ANTHROPIC_API_KEY:               ${{ secrets.ANTHROPIC_API_KEY }}
           CROWDSEC_API_KEY:                ${{ secrets.CROWDSEC_API_KEY }}
@@ -40,35 +40,10 @@ jobs:
           NEXT_PUBLIC_APP_URL:             ${{ secrets.NEXT_PUBLIC_APP_URL }}
           SUPABASE_URL:                    ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY:               ${{ secrets.SUPABASE_ANON_KEY }}
+          STRIPE_SECRET_KEY:               ${{ secrets.STRIPE_SECRET_KEY }}
         run: npm run build
 
-      # Upload .next for deploy job
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: next-build
-          path: |
-            next-infastructure-scrapers/.next
-            next-infastructure-scrapers/public
-            next-infastructure-scrapers/package.json
-            next-infastructure-scrapers/package-lock.json
-            next-infastructure-scrapers/server.js
-            next-infastructure-scrapers/next.config.js
-          retention-days: 1
-
-  # ── 2. Deploy to Hostinger VPS via SSH ──────────────────────────────────────
-  deploy:
-    name: Deploy to Hostinger
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: next-build
-          path: deploy/
-
+      # ── Deploy via SSH — git pull + npm ci + pm2 restart on Hostinger VPS ──
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -78,40 +53,41 @@ jobs:
           port:     ${{ secrets.HOSTINGER_PORT || 22 }}
           script: |
             set -e
-            echo "── Pulling latest code ──"
-            cd /home/${{ secrets.HOSTINGER_USER }}/openclaw
+            APP_DIR="/home/${{ secrets.HOSTINGER_USER }}/openclaw"
+            echo "── Pulling latest ──"
+            cd "$APP_DIR"
             git fetch origin main
             git reset --hard origin/main
 
-            echo "── Installing production deps ──"
+            echo "── Installing deps ──"
             cd next-infastructure-scrapers
             npm ci --legacy-peer-deps --omit=dev
 
-            echo "── Building ──"
+            echo "── Building on server ──"
             ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
             CROWDSEC_API_KEY="${{ secrets.CROWDSEC_API_KEY }}" \
             NEXT_PUBLIC_APP_URL="${{ secrets.NEXT_PUBLIC_APP_URL }}" \
             SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
             SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}" \
+            STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}" \
             npm run build
 
-            echo "── Restarting with PM2 ──"
+            echo "── PM2 restart ──"
             pm2 restart voxcode --update-env 2>/dev/null || \
             pm2 start npm --name voxcode -- run start
-
             pm2 save
-            echo "── Deploy complete ──"
+            echo "── Done ──"
 
       - name: Notify success
         if: success()
         run: |
           curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
-            -d '{"text":"✅ VoxCode deployed to Hostinger — commit `${{ github.sha }}` by ${{ github.actor }}"}'
+            -d "{\"text\":\"✅ VoxCode deployed — \`${{ github.sha }}\` by ${{ github.actor }}\"}"
 
       - name: Notify failure
         if: failure()
         run: |
           curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
-            -d '{"text":"❌ VoxCode deploy FAILED — commit `${{ github.sha }}`\nCheck: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}'
+            -d "{\"text\":\"❌ Deploy FAILED — ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}"

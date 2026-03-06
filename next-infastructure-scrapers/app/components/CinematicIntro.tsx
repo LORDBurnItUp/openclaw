@@ -87,10 +87,22 @@ const NebulaCanvas = memo(function NebulaCanvas({ mouse }: { mouse: Mouse }) {
     };
 
     rafRef.current = requestAnimationFrame(tick);
+
+    // Pause RAF when tab hidden — saves GPU/battery during intro
+    const onVis = () => {
+      if (document.hidden) {
+        cancelAnimationFrame(rafRef.current);
+      } else {
+        rafRef.current = requestAnimationFrame(tick);
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+
     return () => {
       alive = false;
       cancelAnimationFrame(rafRef.current);
       window.removeEventListener("resize", resize);
+      document.removeEventListener("visibilitychange", onVis);
     };
   }, []);
 
@@ -379,9 +391,12 @@ const HoloSphere = memo(function HoloSphere({ phase }: { phase: number }) {
 
 // ─── Shockwave rings ──────────────────────────────────────────────────────────
 const SW_COLORS = ["#22d3ee","#a78bfa","#f472b6","#34d399","#fbbf24","#ffffff","#22d3ee"];
+const SW_COUNT  = 7;
 
 const ShockwaveRings = memo(function ShockwaveRings({ phase }: { phase: number }) {
-  const refs   = Array.from({ length: 7 }, () => useRef<THREE.Mesh>(null));
+  // Fix: single ref array instead of calling useRef inside Array.from (Hook violation)
+  const meshRefs = useRef<(THREE.Mesh | null)[]>(Array(SW_COUNT).fill(null));
+
   const ringGeo = useMemo(() => new THREE.TorusGeometry(1, 0.04, 8, 128), []);
   const mats    = useMemo(() => SW_COLORS.map(c => new THREE.MeshBasicMaterial({
     color: c, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
@@ -390,17 +405,28 @@ const ShockwaveRings = memo(function ShockwaveRings({ phase }: { phase: number }
   useFrame((state) => {
     if (phase !== 2) return;
     const ti = state.clock.getElapsedTime() - TP.IMPACT;
-    refs.forEach((ref, i) => {
-      if (!ref.current) return;
+    meshRefs.current.forEach((mesh, i) => {
+      if (!mesh) return;
       const delay = i * 0.04;
       const tR    = Math.max(0, ti - delay);
-      ref.current.scale.setScalar(tR * 55 + i * 1.5 + 0.01);
-      (ref.current.material as THREE.MeshBasicMaterial).opacity = Math.max(0, 1.0 - tR * 4.0 - i * 0.1);
+      mesh.scale.setScalar(tR * 55 + i * 1.5 + 0.01);
+      (mesh.material as THREE.MeshBasicMaterial).opacity = Math.max(0, 1.0 - tR * 4.0 - i * 0.1);
     });
   });
 
   if (phase !== 2) return null;
-  return <group>{refs.map((ref, i) => <mesh key={i} ref={ref} geometry={ringGeo} material={mats[i]} />)}</group>;
+  return (
+    <group>
+      {SW_COLORS.map((_, i) => (
+        <mesh
+          key={i}
+          ref={(el) => { meshRefs.current[i] = el; }}
+          geometry={ringGeo}
+          material={mats[i]}
+        />
+      ))}
+    </group>
+  );
 });
 
 // ─── Explosion particles ──────────────────────────────────────────────────────

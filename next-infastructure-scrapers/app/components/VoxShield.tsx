@@ -8,7 +8,14 @@ interface IpRep { ip: string; score: number; behaviors: { name: string }[]; note
 
 async function fetchIpRep(): Promise<IpRep | null> {
   try {
-    const res = await fetch("/api/security/ip", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ip: "self" }) });
+    // Get the client's public IP via ipify, then score it via CrowdSec
+    const ipRes  = await fetch("https://api.ipify.org?format=json");
+    const { ip } = await ipRes.json() as { ip: string };
+    const res    = await fetch("/api/security", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ip }),
+    });
     if (!res.ok) return null;
     return await res.json();
   } catch { return null; }

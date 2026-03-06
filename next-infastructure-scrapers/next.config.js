@@ -26,9 +26,10 @@ const nextConfig = {
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob:",
+              "img-src 'self' data: blob: https:",
               "media-src 'self' blob:",
-              "connect-src 'self' http://localhost:11434 https://cti.api.crowdsec.net ws://localhost:*",
+              // Supabase realtime/DB, Ollama local, CrowdSec CTI, ipify for client IP
+              "connect-src 'self' http://localhost:11434 https://*.supabase.co wss://*.supabase.co https://cti.api.crowdsec.net https://api.ipify.org ws://localhost:*",
               "frame-ancestors 'none'",
             ].join("; "),
           },
