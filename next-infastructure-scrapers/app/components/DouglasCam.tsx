@@ -149,8 +149,6 @@ export function DouglasCam() {
     setCamOn(false);
   }, []);
 
-  useEffect(() => () => { stopCam(); stopVoice(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   // Voice input via Web Speech API
   const stopVoice = useCallback(() => {
     if (recognitionRef.current) {
@@ -160,6 +158,8 @@ export function DouglasCam() {
     setVoiceOn(false);
     setVoiceLive("");
   }, []);
+
+  useEffect(() => () => { stopCam(); stopVoice(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleVoice = useCallback(() => {
     if (voiceOn) { stopVoice(); return; }

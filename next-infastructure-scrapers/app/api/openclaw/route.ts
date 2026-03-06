@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, getClientIp } from "../../lib/rate-limiter";
+
+// Rate limit configuration
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX = 30; // 30 requests per minute (OpenClaw commands)
 
 // OpenClaw command processor — handles ClawBar AI commands
 // Commands: deep_scan, enhance, voice_process, status
@@ -23,6 +28,22 @@ Rules:
 type CommandType = "deep_scan" | "enhance" | "voice_process" | "status";
 
 export async function POST(req: NextRequest) {
+  // Apply rate limiting
+  const clientIp = getClientIp(req);
+  const rateLimitResult = rateLimit(clientIp, RATE_LIMIT_WINDOW, RATE_LIMIT_MAX);
+  
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { result: "Too many requests. Please wait a moment.", type: "error" },
+      { 
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.ceil(rateLimitResult.resetIn / 1000)),
+        }
+      }
+    );
+  }
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return NextResponse.json(

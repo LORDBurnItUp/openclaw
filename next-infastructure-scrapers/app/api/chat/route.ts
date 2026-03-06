@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, getClientIp } from "../../lib/rate-limiter";
+
+// Rate limit configuration
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX = 20; // 20 requests per minute
 
 // ClawAssistant system prompt — knows the full OpenClaw + VoxCode ecosystem
 const SYSTEM_PROMPT = `You are the OpenClaw AI Assistant — the smart, friendly front-line agent for the OpenClaw VIP platform and VoxCode voice coding tool.
@@ -39,6 +44,23 @@ const SYSTEM_PROMPT = `You are the OpenClaw AI Assistant — the smart, friendly
 - Comparisons with alternatives (GitHub Copilot, Cursor, etc.)`;
 
 export async function POST(req: NextRequest) {
+  // Apply rate limiting
+  const clientIp = getClientIp(req);
+  const rateLimitResult = rateLimit(clientIp, RATE_LIMIT_WINDOW, RATE_LIMIT_MAX);
+  
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { reply: "Too many requests. Please wait a moment and try again." },
+      { 
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.ceil(rateLimitResult.resetIn / 1000)),
+          "X-RateLimit-Remaining": "0",
+        }
+      }
+    );
+  }
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return NextResponse.json(

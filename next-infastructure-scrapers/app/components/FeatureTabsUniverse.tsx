@@ -69,21 +69,32 @@ const TABS: Tab[] = [
 ];
 
 // ─── Floating particle dots ─────────────────────────────────────────────────
+// Pre-generated particle configurations to avoid Math.random() in render
+const PARTICLE_CONFIGS = Array.from({ length: 18 }).map((_, i) => ({
+  width: 2 + Math.random() * 4,
+  height: 2 + Math.random() * 4,
+  opacity: 0.15 + Math.random() * 0.25,
+  left: 5 + Math.random() * 90,
+  top: 5 + Math.random() * 90,
+  duration: 4 + Math.random() * 6,
+  delay: Math.random() * 4,
+}));
+
 function ParticleDots({ accent }: { accent: string }) {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
-      {Array.from({ length: 18 }).map((_, i) => (
+      {PARTICLE_CONFIGS.map((p, i) => (
         <div
           key={i}
           className="absolute rounded-full"
           style={{
-            width: `${2 + Math.random() * 4}px`,
-            height: `${2 + Math.random() * 4}px`,
+            width: `${p.width}px`,
+            height: `${p.height}px`,
             background: accent,
-            opacity: 0.15 + Math.random() * 0.25,
-            left: `${5 + Math.random() * 90}%`,
-            top: `${5 + Math.random() * 90}%`,
-            animation: `floatDot ${4 + Math.random() * 6}s ease-in-out ${Math.random() * 4}s infinite alternate`,
+            opacity: p.opacity,
+            left: `${p.left}%`,
+            top: `${p.top}%`,
+            animation: `floatDot ${p.duration}s ease-in-out ${p.delay}s infinite alternate`,
           }}
         />
       ))}

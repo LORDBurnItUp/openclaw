@@ -1,0 +1,117 @@
+name: Build & Deploy — VoxCode
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:   # manual trigger from GitHub Actions tab
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── 1. Build & type-check ────────────────────────────────────────────────────
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: next-infastructure-scrapers
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: next-infastructure-scrapers/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build
+        env:
+          ANTHROPIC_API_KEY:               ${{ secrets.ANTHROPIC_API_KEY }}
+          CROWDSEC_API_KEY:                ${{ secrets.CROWDSEC_API_KEY }}
+          NEXT_PUBLIC_STRIPE_PAYMENT_LINK: ${{ secrets.NEXT_PUBLIC_STRIPE_PAYMENT_LINK }}
+          NEXT_PUBLIC_APP_URL:             ${{ secrets.NEXT_PUBLIC_APP_URL }}
+          SUPABASE_URL:                    ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY:               ${{ secrets.SUPABASE_ANON_KEY }}
+        run: npm run build
+
+      # Upload .next for deploy job
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-build
+          path: |
+            next-infastructure-scrapers/.next
+            next-infastructure-scrapers/public
+            next-infastructure-scrapers/package.json
+            next-infastructure-scrapers/package-lock.json
+            next-infastructure-scrapers/server.js
+            next-infastructure-scrapers/next.config.js
+          retention-days: 1
+
+  # ── 2. Deploy to Hostinger VPS via SSH ──────────────────────────────────────
+  deploy:
+    name: Deploy to Hostinger
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: next-build
+          path: deploy/
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host:     ${{ secrets.HOSTINGER_HOST }}
+          username: ${{ secrets.HOSTINGER_USER }}
+          key:      ${{ secrets.HOSTINGER_SSH_KEY }}
+          port:     ${{ secrets.HOSTINGER_PORT || 22 }}
+          script: |
+            set -e
+            echo "── Pulling latest code ──"
+            cd /home/${{ secrets.HOSTINGER_USER }}/openclaw
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "── Installing production deps ──"
+            cd next-infastructure-scrapers
+            npm ci --legacy-peer-deps --omit=dev
+
+            echo "── Building ──"
+            ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
+            CROWDSEC_API_KEY="${{ secrets.CROWDSEC_API_KEY }}" \
+            NEXT_PUBLIC_APP_URL="${{ secrets.NEXT_PUBLIC_APP_URL }}" \
+            SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
+            SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}" \
+            npm run build
+
+            echo "── Restarting with PM2 ──"
+            pm2 restart voxcode --update-env 2>/dev/null || \
+            pm2 start npm --name voxcode -- run start
+
+            pm2 save
+            echo "── Deploy complete ──"
+
+      - name: Notify success
+        if: success()
+        run: |
+          curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{"text":"✅ VoxCode deployed to Hostinger — commit `${{ github.sha }}` by ${{ github.actor }}"}'
+
+      - name: Notify failure
+        if: failure()
+        run: |
+          curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{"text":"❌ VoxCode deploy FAILED — commit `${{ github.sha }}`\nCheck: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}'

@@ -38,7 +38,7 @@ export function Pricing() {
             </div>
             <div className="text-right shrink-0">
               <div className="flex items-end justify-end gap-1">
-                <span className="text-4xl font-bold text-slate-50">$1</span>
+                <span className="text-4xl font-bold text-slate-50">$10</span>
                 <span className="text-xs text-slate-400 mb-1">/month</span>
               </div>
               <p className="text-[10px] text-slate-500">Cancel anytime</p>
