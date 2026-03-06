@@ -59,6 +59,7 @@ export function ClawAssistant() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: next }),
       });
+      if (!res.ok) throw new Error(`API error ${res.status}`);
       const data = await res.json();
       setMessages([...next, { role: "assistant", content: data.reply ?? "Sorry, something went wrong." }]);
     } catch {

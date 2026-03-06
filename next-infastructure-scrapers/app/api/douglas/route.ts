@@ -16,7 +16,7 @@ You are sharp, direct, occasionally witty, and deeply knowledgeable about the Op
 - Args (args/) — Behavior settings (YAML/JSON configs)
 
 **VoxCode** — Voice-to-code engineering tool built on top of OpenClaw:
-- $1/month for solo devs, cancel anytime
+- $10/month for solo devs, cancel anytime
 - Sub-200ms voice-to-code latency via Web Speech API
 - IDE support: VS Code (live), JetBrains (in dev), Neovim, Cursor
 - Auto-fix errors, repo-aware suggestions, deep scan, enhance mode
@@ -75,6 +75,9 @@ export async function POST(req: NextRequest) {
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json({ reply: "No messages." }, { status: 400 });
+    }
+    if (messages.length > 100) {
+      return NextResponse.json({ reply: "Message history too long." }, { status: 400 });
     }
 
     // Ensure valid roles (Anthropic requires alternating user/assistant starting with user)

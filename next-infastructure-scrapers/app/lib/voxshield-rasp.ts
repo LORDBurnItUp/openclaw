@@ -61,6 +61,8 @@ export class VoxShieldRASP {
   private obs:     MutationObserver | null = null;
   private origFetch: typeof fetch | null   = null;
   private timers:  Map<string, ReturnType<typeof setTimeout>> = new Map();
+  private cspHandler:       ((e: SecurityPolicyViolationEvent) => void) | null = null;
+  private clipboardHandler: ((e: ClipboardEvent) => void) | null = null;
 
   constructor(cfg: RASPConfig) {
     this.cfg = cfg;
@@ -79,6 +81,14 @@ export class VoxShieldRASP {
     if (this.origFetch) {
       window.fetch = this.origFetch;
       this.origFetch = null;
+    }
+    if (this.cspHandler) {
+      window.removeEventListener("securitypolicyviolation", this.cspHandler);
+      this.cspHandler = null;
+    }
+    if (this.clipboardHandler) {
+      window.removeEventListener("paste", this.clipboardHandler);
+      this.clipboardHandler = null;
     }
     this.timers.forEach(t => clearTimeout(t));
     this.timers.clear();
@@ -198,25 +208,27 @@ export class VoxShieldRASP {
   // ── 3. CSP Violation Sink ─────────────────────────────────────────────────
   private _initCSPSink() {
     if (typeof window === "undefined") return;
-    window.addEventListener("securitypolicyviolation", (e: SecurityPolicyViolationEvent) => {
+    this.cspHandler = (e: SecurityPolicyViolationEvent) => {
       this._emit({
         level:  "warn",
         type:   "csp_violation",
         detail: `CSP blocked: ${e.violatedDirective} — ${e.blockedURI || "(inline)"}`,
       });
-    });
+    };
+    window.addEventListener("securitypolicyviolation", this.cspHandler);
   }
 
   // ── 4. Clipboard Monitor ──────────────────────────────────────────────────
   private _initClipboardMonitor() {
     if (typeof window === "undefined") return;
-    window.addEventListener("paste", (e: ClipboardEvent) => {
+    this.clipboardHandler = (e: ClipboardEvent) => {
       const text = e.clipboardData?.getData("text") ?? "";
       const hit  = scanInput(text);
       if (hit) {
         this._emit({ level: hit.level, type: "clipboard", detail: `Suspicious paste: ${hit.detail}` });
       }
-    });
+    };
+    window.addEventListener("paste", this.clipboardHandler);
   }
 
   // ── Emit helper ───────────────────────────────────────────────────────────

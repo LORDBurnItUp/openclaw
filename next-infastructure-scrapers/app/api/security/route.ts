@@ -21,6 +21,12 @@ export async function POST(req: Request) {
     if (!ip) {
       return NextResponse.json({ error: "ip required" }, { status: 400 });
     }
+    // Validate IP format - IPv4 or IPv6
+    const isIPv4 = /^(\d{1,3}\.){3}\d{1,3}$/.test(ip);
+    const isIPv6 = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::1$|^::$|^(?:[0-9a-fA-F]{1,4}:){1,7}:$|^(?:[0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}$|^(?:[0-9a-fA-F]{1,4}:){1,5}(?::[0-9a-fA-F]{1,4}){1,2}$|^(?:[0-9a-fA-F]{1,4}:){1,4}(?::[0-9a-fA-F]{1,4}){1,3}$|^(?:[0-9a-fA-F]{1,4}:){1,3}(?::[0-9a-fA-F]{1,4}){1,4}$|^(?:[0-9a-fA-F]{1,4}:){1,2}(?::[0-9a-fA-F]{1,4}){1,5}$|^[0-9a-fA-F]{1,4}:(?::[0-9a-fA-F]{1,4}){1,6}$|^(?:[0-9a-fA-F]{1,4}:){1,7}:$|^::$/.test(ip);
+    if (!isIPv4 && !isIPv6) {
+      return NextResponse.json({ error: "invalid ip format" }, { status: 400 });
+    }
 
     // Graceful degradation — no key means no lookup, not a crash
     if (!CROWDSEC_KEY) {

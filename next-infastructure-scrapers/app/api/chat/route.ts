@@ -11,14 +11,14 @@ const SYSTEM_PROMPT = `You are the OpenClaw AI Assistant — the smart, friendly
 ## What you represent
 
 **OpenClaw VIP** is an AI infrastructure platform built on the GOTCHA framework (Goals, Orchestration, Tools, Context, Hardprompts, Args). It's not just a product — it's a complete system for running AI-powered workflows with deterministic reliability. The platform includes:
-- VoxCode: voice-to-code engine ($1/month for solo devs)
+- VoxCode: voice-to-code engine ($10/month for solo devs)
 - Voice Journal: Whispr Flow-style voice capture on the dashboard
 - Agent Douglas: embedded AI coding partner with camera feed
 - ClawBar: floating command bar with AI-powered deep scan and enhance
 - ClawTerminal: CLI interface for power users
 
 **VoxCode specifics:**
-- Price: $1/month, cancel anytime, no lock-in
+- Price: $10/month, cancel anytime, no lock-in
 - IDEs: VS Code (live), JetBrains (active development), Neovim, Cursor
 - Features: sub-200ms voice-to-code, auto-fix errors, repo-aware suggestions, keyboard shortcut Ctrl+Shift+V
 - Payment: Stripe (card) or PayPal (ai.automating.thefuture@gmail.com)
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         reply:
-          "AI assistant not configured yet. Add ANTHROPIC_API_KEY to .env.local to enable it. Meanwhile — VoxCode is $1/month, Stripe or PayPal accepted.",
+          "AI assistant not configured yet. Add ANTHROPIC_API_KEY to .env.local to enable it. Meanwhile — VoxCode is $10/month, Stripe or PayPal accepted.",
       },
       { status: 200 }
     );
@@ -76,6 +76,9 @@ export async function POST(req: NextRequest) {
     const { messages } = await req.json();
     if (!Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json({ reply: "No messages provided." }, { status: 400 });
+    }
+    if (messages.length > 100) {
+      return NextResponse.json({ reply: "Message history too long." }, { status: 400 });
     }
 
     // Sanitize: only valid roles, non-empty content

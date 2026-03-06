@@ -33,7 +33,7 @@ interface Drip {
 }
 
 // ─── Nebula canvas backdrop — atmospheric depth blobs ────────────────────────
-const NebulaCanvas = memo(function NebulaCanvas({ mouse }: { mouse: Mouse }) {
+const NebulaCanvas = memo(function NebulaCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef    = useRef(0);
 
@@ -112,7 +112,7 @@ const NebulaCanvas = memo(function NebulaCanvas({ mouse }: { mouse: Mouse }) {
       className="pointer-events-none absolute inset-0"
       style={{
         zIndex: 1,
-        transform: `translate(${mouse.x * -14}px, ${mouse.y * -9}px)`,
+        transform: "translate(calc(var(--mx, 0) * -14px), calc(var(--my, 0) * -9px))",
         transition: "transform 0.1s linear",
         opacity: 0.85,
       }}
@@ -572,10 +572,10 @@ export function CinematicIntro({ onDone }: { onDone: () => void }) {
   const [phase,     setPhase]     = useState(0);
   const [opacity,   setOpacity]   = useState(1);
   const [showFlash, setShowFlash] = useState(false);
-  const [mouse,     setMouse]     = useState<Mouse>({ x: 0, y: 0 });
   const doneFired  = useRef(false);
   const startRef   = useRef<number | null>(null);
   const mouseRef   = useRef<Mouse>({ x: 0, y: 0 });
+  const wrapRef    = useRef<HTMLDivElement>(null);
 
   // Sync start time
   useEffect(() => { startRef.current = performance.now(); }, []);
@@ -590,7 +590,10 @@ export function CinematicIntro({ onDone }: { onDone: () => void }) {
     const lerp = () => {
       mouseRef.current.x += (tx - mouseRef.current.x) * 0.06;
       mouseRef.current.y += (ty - mouseRef.current.y) * 0.06;
-      setMouse({ x: mouseRef.current.x, y: mouseRef.current.y });
+      if (wrapRef.current) {
+        wrapRef.current.style.setProperty("--mx", mouseRef.current.x.toFixed(3));
+        wrapRef.current.style.setProperty("--my", mouseRef.current.y.toFixed(3));
+      }
       rafId = requestAnimationFrame(lerp);
     };
     window.addEventListener("mousemove", onMove, { passive: true });
@@ -620,15 +623,14 @@ export function CinematicIntro({ onDone }: { onDone: () => void }) {
     }
   }, [onDone]);
 
-  const mx = mouse.x, my = mouse.y;
-
   return (
     <div
+      ref={wrapRef}
       className="fixed inset-0 z-[9999] overflow-hidden"
       style={{ opacity, transition: "opacity 0.9s ease", background: "#00000f" }}
     >
       {/* ── Nebula backdrop — slowest layer, counter-parallax ── */}
-      <NebulaCanvas mouse={mouse} />
+      <NebulaCanvas />
 
       {/* ── Three.js 3D scene ── */}
       <Canvas
@@ -665,7 +667,7 @@ export function CinematicIntro({ onDone }: { onDone: () => void }) {
           className="pointer-events-none absolute inset-0"
           style={{
             zIndex: 14,
-            transform: `translate(${mx * 8}px, ${my * 5}px)`,
+            transform: "translate(calc(var(--mx, 0) * 8px), calc(var(--my, 0) * 5px))",
             animation: "ciScanLines 0.08s steps(1) infinite, ciFadeHolo 1.0s ease both",
           }}
         />
@@ -695,14 +697,14 @@ export function CinematicIntro({ onDone }: { onDone: () => void }) {
           style={{
             zIndex: 30,
             perspective: "1200px",
-            transform: `translate(${mx * 22}px, ${my * 14}px)`,
+            transform: "translate(calc(var(--mx, 0) * 22px), calc(var(--my, 0) * 14px))",
             animation: "vcCrashIn 1.1s cubic-bezier(0.2,1.4,0.4,1) forwards",
           }}
         >
           {/* 3D tilt card */}
           <div
             style={{
-              transform: `perspective(1200px) rotateY(${-mx * 9}deg) rotateX(${my * 6}deg)`,
+              transform: "perspective(1200px) rotateY(calc(var(--mx, 0) * -9deg)) rotateX(calc(var(--my, 0) * 6deg))",
               transition: "transform 0.08s linear",
               animation: "vcFloat 3.5s ease-in-out infinite alternate",
             }}
@@ -773,7 +775,7 @@ export function CinematicIntro({ onDone }: { onDone: () => void }) {
                   className="absolute inset-0 rounded-xl opacity-30"
                   style={{
                     background: "linear-gradient(to bottom, transparent 60%, rgba(0,0,20,0.4) 100%)",
-                    transform: `translateZ(-20px) translateY(${my * 4}px)`,
+                    transform: "translateZ(-20px) translateY(calc(var(--my, 0) * 4px))",
                     filter: "blur(8px)",
                   }}
                 />
@@ -788,7 +790,7 @@ export function CinematicIntro({ onDone }: { onDone: () => void }) {
         className="pointer-events-none absolute inset-0"
         style={{
           zIndex: 8,
-          transform: `translate(${mx * 6}px, ${my * 4}px)`,
+          transform: "translate(calc(var(--mx, 0) * 6px), calc(var(--my, 0) * 4px))",
           background: "radial-gradient(ellipse 120% 80% at 50% 50%, transparent 30%, rgba(0,0,30,0.15) 100%)",
         }}
       />

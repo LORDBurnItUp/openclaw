@@ -100,14 +100,16 @@ export function VoxShield() {
   const [ipRep,   setIpRep]   = useState<IpRep | null>(null);
   const [ipLoading, setIpLoading] = useState(false);
   const [muted,   setMuted]   = useState(false);
-  const raspRef = useRef<VoxShieldRASP | null>(null);
+  const raspRef  = useRef<VoxShieldRASP | null>(null);
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted; // always reflects latest state without remounting RASP
 
   // ── RASP lifecycle ─────────────────────────────────────────────────────────
   useEffect(() => {
     const rasp = new VoxShieldRASP({
       onThreat: (e) => {
         setThreats(prev => [e, ...prev].slice(0, 50));
-        if (!muted) {
+        if (!mutedRef.current) {
           if (e.level === "critical") speak(`VoxShield Alert. ${e.type.replace(/_/g, " ")} detected.`);
           else if (e.level === "warn") speak(`VoxShield Warning. Suspicious activity detected.`);
         }
@@ -119,7 +121,6 @@ export function VoxShield() {
     raspRef.current = rasp;
     rasp.start();
     return () => { rasp.stop(); raspRef.current = null; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Load IP reputation when panel opens ───────────────────────────────────

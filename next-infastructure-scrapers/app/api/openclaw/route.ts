@@ -54,8 +54,11 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const command: CommandType = body.command ?? "status";
-    const context: string = body.context ?? "";
+    const VALID_COMMANDS: CommandType[] = ["deep_scan", "enhance", "voice_process", "status"];
+    const rawCommand = body.command ?? "status";
+    const command: CommandType = VALID_COMMANDS.includes(rawCommand) ? rawCommand : "status";
+    const rawContext: string = body.context ?? "";
+    const context: string = rawContext.length > 10000 ? rawContext.slice(0, 10000) : rawContext;
 
     const commandPrompts: Record<CommandType, string> = {
       deep_scan: `Run a deep scan on the following content. Identify issues, anti-patterns, improvement opportunities, and security concerns:\n\n${context || "(no content provided — describe what you want scanned)"}`,
