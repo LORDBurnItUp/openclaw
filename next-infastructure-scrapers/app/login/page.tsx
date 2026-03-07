@@ -254,6 +254,110 @@ function SettingsPanel({ onSignOut }: { onSignOut: () => void }) {
   );
 }
 
+// ── Tab Background Visuals ─────────────────────────────────────────────
+function TabBackgrounds({ activeTab }: { activeTab: string }) {
+  if (activeTab === "ai-files") {
+    // Data stream / matrix rain effect
+    return (
+      <div className="absolute inset-0 pointer-events-none opacity-30 overflow-hidden">
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute bg-gradient-to-b from-transparent via-cyan-400 to-transparent w-[2px]"
+            style={{
+              left: `${(i + 1) * 5}%`,
+              height: `${20 + Math.random() * 50}%`,
+              top: "-50%",
+              animation: `dataStreamDrop ${1.5 + Math.random() * 2}s linear ${Math.random() * 2}s infinite`
+            }}
+          />
+        ))}
+        {/* Floating hex data blocks */}
+        {[...Array(8)].map((_, i) => (
+          <div
+            key={`hex${i}`}
+            className="absolute rounded border border-cyan-500/30 flex items-center justify-center font-mono text-[10px] text-cyan-500/60 backdrop-blur-sm"
+            style={{
+              left: `${Math.random() * 90}%`,
+              bottom: `-50px`,
+              width: 50 + Math.random() * 40,
+              height: 50 + Math.random() * 40,
+              animation: `dataBlockFloat ${8 + Math.random() * 6}s linear ${Math.random() * 4}s infinite`,
+              boxShadow: "inset 0 0 10px rgba(34,211,238,0.1)"
+            }}
+          >
+            0x{Math.floor(Math.random()*16777215).toString(16).padEnd(6, '0')}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (activeTab === "mission-control") {
+    // Holographic radar sweeping
+    return (
+      <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center opacity-40 mix-blend-screen">
+        <div className="absolute rounded-full border border-cyan-500/20 w-[600px] h-[600px] flex items-center justify-center">
+          <div className="absolute rounded-full border border-cyan-500/30 w-[400px] h-[400px]" />
+          <div className="absolute rounded-full border border-cyan-500/40 w-[200px] h-[200px]" />
+          {/* Sweeping line */}
+          <div
+            className="absolute w-[300px] h-[300px] origin-bottom-right right-1/2 top-1/2"
+            style={{
+              background: "conic-gradient(from 180deg at 100% 100%, transparent 270deg, rgba(34,211,238,0.3) 360deg)",
+              animation: "radarSweep 3.5s linear infinite"
+            }}
+          />
+          {/* Radar blips */}
+          {[...Array(4)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-2 h-2 rounded-full bg-cyan-400"
+              style={{
+                left: `${30 + Math.random() * 40}%`,
+                top: `${30 + Math.random() * 40}%`,
+                animation: `radarBlip 3.5s ${i * 0.8}s ease-out infinite`
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (activeTab === "memory") {
+    // Brain synapses / neural net
+    return (
+      <div className="absolute inset-0 pointer-events-none opacity-30 overflow-hidden mix-blend-screen">
+         {[...Array(15)].map((_, i) => {
+           const size = 40 + Math.random() * 80;
+           return (
+             <div
+               key={i}
+               className="absolute rounded-full"
+               style={{
+                 left: `${Math.random() * 100}%`,
+                 top: `${Math.random() * 100}%`,
+                 width: size,
+                 height: size,
+                 background: "radial-gradient(circle, rgba(248,113,113,0.35) 0%, transparent 70%)",
+                 animation: `synapsePulse ${1.5 + Math.random() * 3}s ease-in-out ${Math.random() * 2}s infinite alternate`
+               }}
+             />
+           );
+         })}
+      </div>
+    );
+  }
+
+  // Generic faint subtle grid background for others
+  return (
+    <div className="absolute inset-0 pointer-events-none opacity-5">
+      <div className="w-full h-full" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
+    </div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // MAIN PAGE COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
@@ -491,9 +595,12 @@ export default function LoginPage() {
 
             {/* ── TAB CONTENT ── */}
             <div
-              className="rounded-3xl border border-slate-800/40 bg-slate-900/60 p-6 backdrop-blur-xl min-h-[400px]"
+              className="relative overflow-hidden rounded-3xl border border-slate-800/40 bg-slate-900/60 p-6 backdrop-blur-xl min-h-[400px]"
               style={{ boxShadow: "0 0 50px rgba(0,0,0,0.3)" }}
             >
+              <TabBackgrounds activeTab={activeTab} />
+              
+              <div className="relative z-10 space-y-2">
               {/* HOME */}
               {activeTab === "home" && (
                 <div className="space-y-5">
@@ -753,6 +860,7 @@ export default function LoginPage() {
 
               {/* SETTINGS */}
               {activeTab === "settings" && <SettingsPanel onSignOut={handleSignOut} />}
+              </div>
             </div>
 
             {/* Sign out footer */}
@@ -844,6 +952,32 @@ export default function LoginPage() {
           20%  { opacity: 1; }
           80%  { opacity: 1; }
           100% { opacity: 0; }
+        }
+        @keyframes dataStreamDrop {
+          0%   { transform: translateY(0); opacity: 0; }
+          10%  { opacity: 1; }
+          80%  { opacity: 1; }
+          100% { transform: translateY(800px); opacity: 0; }
+        }
+        @keyframes dataBlockFloat {
+          0%   { transform: translateY(0) rotate(0deg); opacity: 0; }
+          10%  { opacity: 1; }
+          90%  { opacity: 1; }
+          100% { transform: translateY(-600px) rotate(180deg); opacity: 0; }
+        }
+        @keyframes radarSweep {
+          0%   { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        @keyframes radarBlip {
+          0%, 20% { opacity: 0; transform: scale(0.5); }
+          25% { opacity: 1; transform: scale(1.5); box-shadow: 0 0 10px #22d3ee; }
+          50% { opacity: 0; transform: scale(1); }
+          100% { opacity: 0; }
+        }
+        @keyframes synapsePulse {
+          from { transform: scale(0.8); opacity: 0.3; }
+          to   { transform: scale(1.2); opacity: 0.8; }
         }
       `}</style>
     </div>
