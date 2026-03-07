@@ -15,11 +15,25 @@ const SECTIONS: Record<string, string> = {
   download: "#download",
   pricing:  "#pricing",
   faq:      "#faq",
+  // Dashboard tabs — teleport to login/dashboard
+  home:       "/login#home",
+  profile:    "/login#profile",
+  messages:   "/login#messages",
+  friends:    "/login#friends",
+  groups:     "/login#groups",
+  forum:      "/login#forum",
+  "about-us": "/login#about",
+  "ai-files": "/login#ai-files",
+  "mission-control": "/login#mission-control",
+  memory:     "/login#memory",
+  dashboard:  "/login",
 };
 
 const ALL_CMDS = [
   "help", "goto", "ls", "buy", "login", "status",
   "version", "clear", "whoami", "about", "exit",
+  "dashboard", "home", "profile", "messages", "friends",
+  "groups", "forum", "memory", "mission-control", "ai-files",
 ];
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -150,6 +164,15 @@ export function ClawTerminal() {
               { type: "err", text: `  Unknown section: '${dest}'` },
               { type: "dim", text: `  Available: ${Object.keys(SECTIONS).filter(k => !["top","howitworks"].includes(k)).join("  ")}` },
             );
+          } else if (target.startsWith("/")) {
+            // Dashboard navigation — redirect to login/dashboard
+            push(
+              { type: "ok",  text: `  🌀 Warping to ${dest}...` },
+              { type: "dim", text: "  Entering black hole tunnel..." },
+            );
+            setTeleporting(true);
+            setTimeout(() => { window.location.href = target; }, 800);
+            return;
           } else {
             push(
               { type: "ok",  text: `  ⚡ Teleporting to ${dest}...` },

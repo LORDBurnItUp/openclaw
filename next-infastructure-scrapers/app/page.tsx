@@ -25,7 +25,8 @@ import { FGWallet } from "./components/FGWallet";
 import { DouglasCam } from "./components/DouglasCam";
 import { OllamaAgent } from "./components/OllamaAgent";
 import { VoxShield } from "./components/VoxShield";
-import { CinematicIntro } from "./components/CinematicIntro";
+import { SplineAPIManager } from "./components/SplineAPIManager";
+import { SplineIntro } from "./components/SplineIntro";
 import { GemParticles } from "./components/GemParticles";
 
 export default function Home() {
@@ -41,8 +42,8 @@ export default function Home() {
 
   return (
     <>
-      {/* ── Cinematic intro — fullscreen until done ── */}
-      {!introDone && <CinematicIntro onDone={() => setIntroDone(true)} />}
+      {/* ── Spline intro — fullscreen until done ── */}
+      {!introDone && <SplineIntro onDone={() => setIntroDone(true)} />}
 
       {/* ── Quantum Leap flash — fires the instant intro ends ── */}
       {leapFlash && (
@@ -119,6 +120,7 @@ export default function Home() {
           <DouglasCam />
           <OllamaAgent />
           <VoxShield />
+          <SplineAPIManager />
         </div>
       </div>
 

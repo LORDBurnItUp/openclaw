@@ -10,7 +10,8 @@
   <meta property="og:type" content="website">
   <title>VoxCode — AI Voice Coding Assistant</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -38,6 +39,8 @@
       overflow-x: hidden;
     }
 
+    h1, h2, h3, .nav-logo { font-family: 'Outfit', sans-serif; }
+
     /* NAV */
     nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
@@ -63,6 +66,24 @@
       padding: 6rem 2rem 4rem;
       position: relative;
       overflow: hidden;
+    }
+    #canvas-wrapper {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    #canvas3d {
+      width: 100%;
+      height: 100%;
+    }
+    .hero > *:not(#canvas-wrapper) {
+      position: relative;
+      z-index: 2;
     }
     .hero::before {
       content: '';
@@ -146,14 +167,24 @@
 
     .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
     .feature-card {
-      background: var(--bg2); border: 1px solid var(--border);
-      border-radius: 12px; padding: 1.75rem;
-      transition: border-color 0.2s, transform 0.2s;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(10px);
+      border-radius: 16px; padding: 2rem;
+      transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
     }
-    .feature-card:hover { border-color: rgba(0,255,136,0.3); transform: translateY(-2px); }
-    .feature-icon { font-size: 1.5rem; margin-bottom: 1rem; }
-    .feature-title { font-weight: 700; margin-bottom: 0.5rem; font-size: 1rem; }
-    .feature-desc { color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+    .feature-card:hover { 
+      border-color: var(--green); 
+      transform: translateY(-5px);
+      background: rgba(255, 255, 255, 0.05);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 20px rgba(0,255,136,0.1);
+    }
+    .feature-icon { 
+      font-size: 2rem; margin-bottom: 1.5rem; 
+      filter: drop-shadow(0 0 10px rgba(0,255,136,0.5));
+    }
+    .feature-title { font-weight: 700; margin-bottom: 0.75rem; font-size: 1.25rem; color: #fff; }
+    .feature-desc { color: var(--muted); font-size: 0.95rem; line-height: 1.7; }
 
     /* HOW IT WORKS */
     .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 2rem; }
@@ -242,16 +273,19 @@
 <nav>
   <div class="nav-logo">Vox<span>Code</span></div>
   <ul class="nav-links">
+    <li><a href="intro.html" style="color: var(--green); font-weight: 600;">✨ 3D Intro</a></li>
     <li><a href="#features">Features</a></li>
     <li><a href="#how-it-works">How it works</a></li>
     <li><a href="#pricing">Pricing</a></li>
-    <li><a href="#faq">FAQ</a></li>
   </ul>
   <a href="#pricing" class="nav-cta">Get VoxCode →</a>
 </nav>
 
 <!-- HERO -->
 <section class="hero">
+  <div id="canvas-wrapper">
+    <canvas id="canvas3d"></canvas>
+  </div>
   <div class="badge">Open Beta — Limited Early Bird Pricing</div>
   <h1>Code with your <span class="accent">voice.</span><br>Ship while you sleep.</h1>
   <p class="hero-sub">The AI-powered voice coding assistant that speaks your IDE's language. Powered by Whisper + Claude. Works everywhere you code.</p>
@@ -485,5 +519,26 @@
   <p>© 2026 VoxCode · <a href="mailto:support@voxcode.dev">support@voxcode.dev</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
 </footer>
 
+
+  <!-- Spline Runtime -->
+  <script type="module">
+    import { Application } from 'https://cdn.jsdelivr.net/npm/@splinetool/runtime@1.9.19/+esm';
+
+    const canvas = document.getElementById('canvas3d');
+    const app = new Application(canvas);
+    
+    async function init() {
+      try {
+        await app.load('https://prod.spline.design/kMWi1sxpCPiTM5ha/scene.splinecode');
+        console.log('Spline loaded');
+        // Smoothly reveal canvas
+        document.getElementById('canvas-wrapper').style.opacity = '0.6';
+      } catch (err) {
+        console.error('Spline failed to load:', err);
+      }
+    }
+    
+    init();
+  </script>
 </body>
 </html>

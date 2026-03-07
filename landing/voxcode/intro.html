@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="VoxCode — The Future of Voice-Powered Coding. Experience the power of 3D and AI.">
+    <title>VoxCode — Space Introduction</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Outfit:wght@500;800&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #030305;
+            --accent-green: #00ff88;
+            --accent-purple: #9d00ff;
+            --accent-blue: #00d2ff;
+            --text-color: #ffffff;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --font-main: 'Inter', sans-serif;
+            --font-display: 'Space Grotesk', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: crosshair;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Loading Screen */
+        #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 1s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .loader-ring {
+            width: 80px;
+            height: 80px;
+            border: 4px solid var(--glass-border);
+            border-top: 4px solid var(--accent-green);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 2rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loader-text {
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--accent-green);
+            opacity: 0.8;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+
+        /* Spline Container */
+        #canvas-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        #canvas3d {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Content Overlay */
+        .content {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 1.5s cubic-bezier(0.19, 1, 0.22, 1) 0.5s;
+        }
+
+        .content.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .badge {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            color: var(--accent-green);
+            padding: 0.5rem 1rem;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-bottom: 1.5rem;
+            backdrop-filter: blur(5px);
+            pointer-events: auto;
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: clamp(3rem, 10vw, 7rem);
+            font-weight: 800;
+            line-height: 0.9;
+            margin-bottom: 2rem;
+            background: linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.4) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.05em;
+        }
+
+        .subtitle {
+            font-size: clamp(1rem, 2vw, 1.25rem);
+            max-width: 600px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 3rem;
+            font-weight: 400;
+            letter-spacing: 0.02em;
+        }
+
+        .cta-container {
+            pointer-events: auto;
+        }
+
+        .btn-enter {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: #fff;
+            padding: 1.25rem 3rem;
+            border-radius: 12px;
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-enter::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: 0.5s;
+        }
+
+        .btn-enter:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent-green);
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.2);
+        }
+
+        .btn-enter:hover::before {
+            left: 100%;
+        }
+
+        /* Ambient Elements */
+        .ambient-light {
+            position: absolute;
+            width: 50vw;
+            height: 50vw;
+            border-radius: 50%;
+            filter: blur(150px);
+            z-index: 0;
+            opacity: 0.15;
+            pointer-events: none;
+        }
+
+        .light-1 {
+            top: -10%;
+            left: -10%;
+            background: var(--accent-purple);
+            animation: float 10s ease-in-out infinite;
+        }
+
+        .light-2 {
+            bottom: -10%;
+            right: -10%;
+            background: var(--accent-green);
+            animation: float 12s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(50px, 30px); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 { font-size: 4rem; }
+            .subtitle { font-size: 1rem; padding: 0 2rem; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Ambient Glows -->
+    <div class="ambient-light light-1"></div>
+    <div class="ambient-light light-2"></div>
+
+    <!-- Loading Screen -->
+    <div id="loader">
+        <div class="loader-ring"></div>
+        <div class="loader-text">Initializing Scape...</div>
+    </div>
+
+    <!-- 3D Canvas -->
+    <div id="canvas-wrapper">
+        <canvas id="canvas3d"></canvas>
+    </div>
+
+    <!-- UI Overlay -->
+    <div class="content" id="content">
+        <div class="badge">Next Gen Dev Experience</div>
+        <h1>VOXCODE</h1>
+        <p class="subtitle">Elevate your development workflow with the power of voice and 3D orchestration. From the vastness of space to your local machine.</p>
+        <div class="cta-container">
+            <a href="index.html" class="btn-enter">LAUNCH INTERFACE</a>
+        </div>
+    </div>
+
+    <!-- Spline Runtime -->
+    <script type="module">
+        import { Application } from 'https://cdn.jsdelivr.net/npm/@splinetool/runtime@1.9.19/+esm';
+
+        const canvas = document.getElementById('canvas3d');
+        const app = new Application(canvas);
+        
+        const content = document.getElementById('content');
+        const loader = document.getElementById('loader');
+
+        async function init() {
+            try {
+                // Load the spline scene
+                await app.load('https://prod.spline.design/kMWi1sxpCPiTM5ha/scene.splinecode');
+                
+                // Hide loader and show content
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                    content.classList.add('visible');
+                }, 1000);
+
+                console.log('Spline scene loaded successfully');
+            } catch (error) {
+                console.error('Error loading Spline scene:', error);
+                // Fallback for demo if offline or error
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                    content.classList.add('visible');
+                }, 1000);
+            }
+        }
+
+        init();
+
+        // Mouse hover interactions (optional, many spline scenes already have them)
+        // app.addEventListener('mouseDown', (e) => { ... });
+    </script>
+
+</body>
+</html>
